@@ -1,0 +1,59 @@
+
+
+?$select=DisplayName,Id,ext7iphm6j6_IdentityManagement
+
+DELETE https://graph.microsoft.com/beta/users/3ae4ac79-e3ed-4dbc-b7e4-8646af57a69e
+
+GET https://graph.microsoft.com/beta/users?$select=ext7iphm6j6_IdentityManagement
+
+PATCH https://graph.microsoft.com/beta/users/3ae4ac79-e3ed-4dbc-b7e4-8646af57a69e
+{
+    "ext7iphm6j6_IdentityManagement": {
+    "UserStatus": "4",
+}
+}
+
+POST https://graph.microsoft.com/beta/users/ 
+// Opprette bruker (mandatory properties: accountEnabled, displayName, mailnickname, passwordProfile{password}, userPrincipalname) + schema extension _IdentityManagement
+
+{
+    "accountEnabled": true,
+    "displayName": "u3jfejlkfjdokfdslk@hackaton.goodworkaround.com",
+    "mailnickname": "joifjda09843290ui0fjea09fjea0",
+    "passwordProfile": {
+        "password": "ResetM3!",
+        "forceChangePasswordNextSignIn": false
+    },
+    "userPrincipalName": "dole999@iashackaton.onmicrosoft.com",
+    "ext7iphm6j6_IdentityManagement": {
+                "UserStatus": "1",
+                "UserEnabled": true,
+                "LastName": "Dole",
+                "FirstName": "Duck",
+                "Manager": null,
+                "Phone": null,
+                "Mobile": null,
+                "JobTitle": null,
+                "Office": null,
+                "Department": null,
+                "Division": null,
+                "Company": null,
+                "DisplayName": null
+    }
+}
+
+UTEN schema extension attribute:
+
+{
+    "accountEnabled": true,
+    "displayName": "Ku, Klara",
+    "givenName": "Klara",
+    "mailnickname": "joifjda09843290ui0fjea09fjea0",
+    "passwordProfile": {
+        "password": "ResetM3!",
+        "forceChangePasswordNextSignIn": false
+    },
+    "surname": "Ku",
+    "userPrincipalName": "klara.ku999@iashackaton.onmicrosoft.com",
+}
+
