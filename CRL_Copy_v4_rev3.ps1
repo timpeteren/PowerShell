@@ -18,11 +18,15 @@
 # Thank you to everyone for your code contributions and ideas. For a detailed explaination of this script please go to: https://gallery.technet.microsoft.com/scriptcenter/Powershell-CRL-Copy-v4-11554ea5 
 # 
 # 21/8/2019
+# Tim Peter Edstrøm
 # Modified: Added conversion for crl numbers to make sure they are in hexadecimal format when the master (published) crl and (local) issuing CA crl are compared
 # If run within the task scheduler using the "Publish" method the process no longer requires local administrator permissions. 
 #
 # 12.04.2021
-# Removed script dependency "Get-Credential" (line 479-ish $Cred = ./get-credential.ps1 $cdp.push_username $cdp.push_passwordfile)
+# Tim Peter Edstrøm
+# Removed script dependency "Get-Credential" (line 479-ish $Cred = ./get-credential.ps1 $cdp.push_username $cdp.push_passwordfile) with
+# the PSCredential object System.Management.Automation.PSCredential($cdp.push_username, (Get-Content $cdp.push_passwordfile | ConvertTo-SecureString).
+# When script runs it will read the encrypted secret in the passwordfile and only if the password is stored in the user's context will it be decodable
 #
 # IMPORTANT! 
 # The service account running the scheduled task is given the right to "Logon as a batch job", via central or local group policy configuration.
