@@ -8,13 +8,15 @@
     # Script will fetch all issued (and omit revoked) and still valid certificates issued from a certificate template
     # It will create computer objects in an organizational by comparing the identities of issued certificate with objects in the OU
     #
-    # TODO:
-    # * Write status, when performing additions (and later, removals) to Event Log
-    # * Add cleanup support by removing objects from the OU if a certificate has been revoked or expired
+    # NOTE!
+    # The script should be run in a normal user context as it does not require elevated privileges
     #
     # Pre-req:
-    # * Remote Server Administration Tools ActiveDirectory PowerShell module
-    # * Account running the script must have permissions to add computer objects in the designated OU
+    # * Account running script must be a *domain user* and have permissions to add computer objects in the designated OU
+    #       Use "delegate" on the Organizational Unit (OU), choose custom and then computer object and read / write
+    # * The service account used running script MUST have "Issue and Manage" permissions on the Certificate Authority (CA) to query CA for issued certificates <- IMPORTANT
+    # * The OU canonical name is required to address the OU for the device objects, but WITHOUT the "domain.local/" prefix
+    #       The canonical name of an object or OU can be found on the Active Directory object tab "Object" :-)
     #
     # v0.1: Initial release
     #
@@ -35,10 +37,40 @@
     #
     # v0.85: Output status if no new certificates have been found, minor improvements
     #
+    # 07.02.22 Tim Peter Edstrøm
+    # v0.9: Add check for prerequisite PowerShell module
+    #       Modify script to require it to be run as administrator once (if the PowerShell module is not installed)
+    #
+    #
+    #
+    # TODO:
+    # * Write status, when performing additions (and later, removals) to Event Log
+    # * Add cleanup support by removing objects from the OU if a certificate has been revoked or expired
+    # * Support local user to exceute task and read the credentials for the domain user from encrypted file on disk
+    #
+    #
     ###############################################################################################################################
 #>
 
-Get-WindowsFeature -name RSAT-AD-Powershell
+# Add param to distringuish if script needs to install pre-requisite feature and then exit administrative context once it's done
+$preReqCheck = (Get-WindowsFeature -name RSAT-AD-Powershell).InstallState
+
+if ($preReqCheck -eq "Available") {
+    try {
+    
+        # Verify that the script is running with elevated privileges
+        if (-not ( [Security.Principal.WindowsIdentity]::GetCurrent().Groups -contains 'S-1-5-32-544') ) {
+            Write-Host "On first execution, run script with administrative privileges to install prerequisites." -ForegroundColor Red
+        }
+        else {
+            $result = Install-WindowsFeature -Name RSAT-AD-Powershell -Confirm:$false -Verbose
+            Write-Host "Successfully installed prerequisite. Now run script again in non-elevated context." -ForegroundColor Green
+        }
+    } catch {
+        Write-Error "Failure when installing prerequisites, exiting..."
+    }
+    exit
+}
 
 # Clears values before executing script in case it has been run multiple times (these search strings would otherwise append for each run)
 $domainDName = $null
@@ -55,11 +87,11 @@ $i=$j=$k=$l=$m  = 0
 
 # Fill in $domain and $domainDName values manually should you so prefer
 $domain = (Get-ADDomain).DNSRoot
-# Canonical name format (and OU order) and NOT distinguished name order
+# Canonical name format (and OU order) and NOT distinguished name order, example: "Resources/dot1xDevices", WITHOUT domain
 $path = "example/servers/dot1x"
 # Certificate authority servername (ONLY) WITHOUT domain, which is added from the $domain variable
 $serverName = "exampleCAserver"
-# Certificate authority name, cant be found by runnning "certutil -ping" on CA server, by opening Certification Authority management console
+# Certificate Authority (CA) name, can be found by runnning "certutil -ping" on CA server, or by opening CA management console
 $certificateAuthorityName = "example Issuing CA"
 # Certificate template DISPLAY name (including spaces if template contains any)
 $templDName = "example computer certificate template"
