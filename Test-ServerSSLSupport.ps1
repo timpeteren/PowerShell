@@ -1,4 +1,4 @@
-function Test-ServerSSLSupport {
+function Test-WebSolutionSSLSupport {
     [CmdletBinding()]
         param(
             [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
@@ -13,16 +13,42 @@ function Test-ServerSSLSupport {
                 Port = $Port
                 KeyExhange = $null
                 HashAlgorithm = $null
-                SSLv2 = $false
-                SSLv3 = $false
-                TLSv1_0 = $false
-                TLSv1_1 = $false
-                TLSv1_2 = $false
+                SSLv2 = "Not Attempted"
+                SSLv3 = "Not Attempted"
+                TLSv1_0 = "Not Attempted"
+                TLSv1_1 = "Not Attempted"
+                TLSv1_2 = "Not Attempted"
+                ErrorMessage = "No Errors Occured"
             })
             "ssl2", "ssl3", "tls", "tls11", "tls12" | %{
                 $TcpClient = New-Object Net.Sockets.TcpClient
-                try {$TcpClient.Connect($RetValue.Host, $RetValue.Port)}
-                catch {Write-Host "`nThe host $HostName does not exist or not responding on port $Port `n" -ForegroundColor RED; break}
+                try {
+                    #Use Async Connect method to control timeout periods for connection
+                    $Connect = $TcpClient.BeginConnect($RetValue.Host, $RetValue.Port,$null,$null) 
+                    #Configure a timeout before quitting - time in milliseconds 
+                    $Wait = $Connect.AsyncWaitHandle.WaitOne(1000,$false) 
+                    If (-Not $Wait) {
+                        #Host didt not response within set time
+                         $RetValue.ErrorMessage = "Unable to Connect to $HostName : $Port"
+                         $TcpClient.Dispose();
+                        return
+                    } Else {
+                        $error.clear()
+                        $TcpClient.EndConnect($Connect) | out-Null 
+                        If ($Error[0]) {
+                            #Error happened during connect
+                            Write-warning ("{0}" -f $error[0].Exception.Message)
+                        } Else {
+                            #The Port is Open Continue Operation
+                        }
+                    }
+                }
+                catch {
+                    $RetValue.ErrorMessage = "Unable to Connect to $HostName : $Port"
+                    $TcpClient.Dispose();
+                    return
+                # Write-Host "`nThe host $HostName does not exist or not responding on port $Port `n" -ForegroundColor RED; return
+                }
                 $SslStream = New-Object -TypeName Net.Security.SslStream -ArgumentList $TcpClient.GetStream(), $true,([System.Net.Security.RemoteCertificateValidationCallback]{$true})
                 $SslStream.ReadTimeout = 15000
                 $SslStream.WriteTimeout = 15000
@@ -30,9 +56,9 @@ function Test-ServerSSLSupport {
                     $SslStream.AuthenticateAsClient($RetValue.Host,$null,$_,$false)
                     $RetValue.KeyExhange = $SslStream.KeyExchangeAlgorithm
                     $RetValue.HashAlgorithm = $SslStream.HashAlgorithm
-                    $status = $true
+                    $status = "Available"
                 } catch {
-                    $status = $false
+                    $status = "Not Available"
                 }
                 switch ($_) {
                     "ssl2" {$RetValue.SSLv2 = $status}
