@@ -1,10 +1,13 @@
 <#
 .SYNOPSIS
     This script performs the installation or uninstallation of the Sysinternals Suite.
+    Sysinternals Suite deploys in a "SysinternalsSuite" folder in the user "Documents" folder
 .DESCRIPTION
-    The script is provided as a template to perform an install or uninstall of an application(s).
-    The script requires either -Install:$true -Uninstall:$true parameter to be proviede.
-    Optionally the -InstallPath parameter can also be provided
+    CREDITS to Jason Bergner for initial script (deployed via PowerShell App Deployment Toolkit)
+    https://silentinstallhq.com/sysinternals-suite-install-and-uninstall-powershell/
+    
+    The script can be run with either -Install (default) or -Uninstall parameters.
+    -InstallPath parameter can be provided to override default location (/Documents/).
 
 .PARAMETER DeploymentType
     The type of deployment to perform. Default is: Install.
@@ -19,7 +22,7 @@
 #>
 [CmdletBinding()]
 Param (
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet("Install", "Uninstall")]
     [string]$DeploymentType = "Install",
     [Parameter(Mandatory = $false)]
